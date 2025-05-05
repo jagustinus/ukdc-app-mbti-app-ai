@@ -26,22 +26,22 @@ class BayesianMBTIApp:
         self.questions = data.data
 
         self.personality_descriptions = {
-            "ISTJ": "Quiet, serious, thorough, and dependable. Practical, matter-of-fact, realistic, and responsible.",
-            "ISFJ": "Quiet, friendly, responsible, and conscientious. Committed and steady in meeting obligations.",
-            "INFJ": "Seek meaning and connection in ideas, relationships, and material possessions.",
-            "INTJ": "Have original minds and great drive for implementing their ideas and achieving their goals.",
-            "ISTP": "Tolerant and flexible, quiet observers until a problem appears, then act quickly to find solutions.",
-            "ISFP": "Quiet, friendly, sensitive, and kind. Enjoy the present moment and what's going on around them.",
-            "INFP": "Idealistic, loyal to their values and to people who are important to them.",
-            "INTP": "Seek to develop logical explanations for everything that interests them.",
-            "ESTP": "Flexible and tolerant, take a pragmatic approach focused on immediate results.",
-            "ESFP": "Outgoing, friendly, and accepting. Exuberant lovers of life, people, and material comforts.",
-            "ENFP": "Warmly enthusiastic and imaginative. See life as full of possibilities.",
-            "ENTP": "Quick, ingenious, stimulating, alert, and outspoken. Resourceful in solving challenging problems.",
-            "ESTJ": "Practical, realistic, matter-of-fact. Decisive, quickly move to implement decisions.",
-            "ESFJ": "Warmhearted, conscientious, and cooperative. Want harmony in their environment.",
-            "ENFJ": "Warm, empathetic, responsive, and responsible. Highly attuned to the needs of others.",
-            "ENTJ": "Frank, decisive, assumes leadership readily. Quickly see illogical procedures and policies."
+            "ISTJ": "Methodical and dependable, ISTJs thrive in roles like software engineer, systems analyst, or IT administrator, where precision, structure, and long-term reliability are valued.",
+            "ISFJ": "Responsible and thorough, ISFJs excel in QA testing, technical support, or documentation, where careful follow-through and user-centric thinking are key.",
+            "INFJ": "Purpose-driven and insightful, INFJs may enjoy UX design, AI ethics, or data science for social good, where abstract thinking meets meaningful impact.",
+            "INTJ": "Strategic and independent, INTJs are well-suited for software architecture, machine learning, or startup tech leadership, where vision and self-motivation are critical.",
+            "ISTP": "Analytical and hands-on, ISTPs thrive as embedded systems engineers, cybersecurity specialists, or DevOps engineers, where real-time problem-solving is required.",
+            "ISFP": "Sensitive and observant, ISFPs may enjoy UI/UX design, front-end development, or digital media, where aesthetics and user experience are vital.",
+            "INFP": "Idealistic and imaginative, INFPs may be drawn to creative coding, game development, or human-centered data science, where values and vision align with technology.",
+            "INTP": "Curious and conceptual, INTPs fit well in AI research, algorithm development, or open-source projects, where independent exploration and innovation are encouraged.",
+            "ESTP": "Action-oriented and adaptable, ESTPs might thrive in tech sales, startup operations, or field engineering, where quick thinking and flexibility are key.",
+            "ESFP": "Energetic and sociable, ESFPs may enjoy roles in tech support, digital marketing, or community engagement for tech platforms, where interaction and enthusiasm are assets.",
+            "ENFP": "Creative and enthusiastic, ENFPs flourish in startup environments, product design, or innovation labs, where vision, communication, and adaptability matter.",
+            "ENTP": "Inventive and dynamic, ENTPs are often great in entrepreneurship, product management, or emerging tech research, where bold ideas and quick learning are beneficial.",
+            "ESTJ": "Organized and decisive, ESTJs are well-suited for project management, technical leadership, or IT operations, where systems, structure, and execution are essential.",
+            "ESFJ": "Cooperative and supportive, ESFJs may thrive in user training, customer success roles, or HR tech, where empathy and order intersect.",
+            "ENFJ": "Empathetic and motivating, ENFJs do well in team leadership, edtech, or user research, where communication and advocacy help guide technology use.",
+            "ENTJ": "Visionary and assertive, ENTJs are ideal for CTO roles, tech strategy, or product ownership, where leadership and long-term planning are vital."
         }
 
     def ask_question(self, question, likelihoods):
@@ -95,62 +95,7 @@ class BayesianMBTIApp:
         if not remaining_indices:
             return None
 
-        # Get current most probable type and its closest competitors
-        top_types = sorted(self.type_probabilities.items(), key=lambda x: x[1], reverse=True)
-        current_leader = top_types[0][0]
-        close_competitors = [t[0] for t in top_types[1:4]]  # Get next 3 closest types
-
-        # Find dimensions where there's the most uncertainty
-        uncertain_dimensions = []
-
-        # Calculate dimensional probabilities
-        e_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[0] == 'E')
-        i_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[0] == 'I')
-
-        s_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[1] == 'S')
-        n_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[1] == 'N')
-
-        t_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[2] == 'T')
-        f_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[2] == 'F')
-
-        j_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[3] == 'J')
-        p_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[3] == 'P')
-
-        # Add dimensions with close probabilities (uncertain dimensions)
-        if abs(e_prob - i_prob) < 0.2:
-            uncertain_dimensions.append("EI")
-        if abs(s_prob - n_prob) < 0.2:
-            uncertain_dimensions.append("SN")
-        if abs(t_prob - f_prob) < 0.2:
-            uncertain_dimensions.append("TF")
-        if abs(j_prob - p_prob) < 0.2:
-            uncertain_dimensions.append("JP")
-
-        # If no uncertain dimensions found, use dimensions that differentiate top types
-        if not uncertain_dimensions:
-            for competitor in close_competitors:
-                for i, (leader_letter, competitor_letter) in enumerate(zip(current_leader, competitor)):
-                    if leader_letter != competitor_letter:
-                        dimension_map = {0: "EI", 1: "SN", 2: "TF", 3: "JP"}
-                        uncertain_dimensions.append(dimension_map[i])
-
-        # If we found uncertain dimensions, prioritize questions for those dimensions
-        best_question_index = remaining_indices[0]  # Default to first question
-
-        if uncertain_dimensions:
-            # Find first question that tests the most uncertain dimension
-            for index in remaining_indices:
-                _, likelihoods = self.questions[index]
-
-                # Get the question type from the first answer's keys
-                first_answer_keys = list(likelihoods[1].keys())
-                question_dimension = ''.join(first_answer_keys)
-
-                if question_dimension in uncertain_dimensions:
-                    best_question_index = index
-                    break
-
-        return best_question_index
+        return remaining_indices[0]
 
     def determine_type(self):
         """Find the MBTI type with the highest probability"""
@@ -193,9 +138,9 @@ class BayesianMBTIApp:
                 print(f"{type_name}: {prob:.1%}")
 
             # If we're very confident (>80%), we could stop early
-            if current_probability > 0.8 and asked_questions >= 5:
-                print("\nHigh confidence reached, finishing test early...")
-                break
+            # if current_probability > 0.8 and asked_questions >= 5:
+            #     print("\nHigh confidence reached, finishing test early...")
+            #     break
 
         # Determine and display results
         personality_type = self.determine_type()
@@ -230,6 +175,6 @@ class BayesianMBTIApp:
         print(f"T: {t_prob:.1%} - F: {f_prob:.1%}")
         print(f"J: {j_prob:.1%} - P: {p_prob:.1%}")
 
-# if __name__ == "__main__":
-#     app = BayesianMBTIApp()
-#     app.run_test()
+    def reset(self):
+        for mbti_type in self.mbti_types:
+            self.type_probabilities[mbti_type] = 1/16
