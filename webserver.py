@@ -22,6 +22,15 @@ def test():
         session['probabilities'] = {mbti_type: 1/16 for mbti_type in mbti_app.mbti_types}
         session['current_question_index'] = None
 
+    if request.method == 'GET':
+        try:
+            name = request.args['name']
+            email = request.args['email']
+            mbti_app.set_email(email)
+            mbti_app.set_name(name)
+        except:
+            pass
+
     # Process answer if POST
     if request.method == 'POST' and 'answer' in request.form:
         answer = int(request.form['answer'])
@@ -105,7 +114,7 @@ def results():
 
     return render_template(
             'results.html',
-            personality_type=personality_type, 
+            personality_type=personality_type,
             confidence=round(confidence, 1),
             description=mbti_app.personality_descriptions.get(personality_type, ""),
             sorted_types=sorted_types,
@@ -114,7 +123,9 @@ def results():
                 'S': round(s_prob, 1), 'N': round(n_prob, 1),
                 'T': round(t_prob, 1), 'F': round(f_prob, 1),
                 'J': round(j_prob, 1), 'P': round(p_prob, 1)
-                }
+                },
+            user_name=mbti_app.name,
+            user_email=mbti_app.email,
             )
 
 @app.route('/reset')
