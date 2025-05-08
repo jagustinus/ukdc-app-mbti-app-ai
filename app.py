@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# old ver by copilot (Claude 3.7)
-# TODO: Nentukan Jobs atau cocok
-# TODO: Flask
 
 from data_fetcher import DataFetcher
 
@@ -189,4 +186,3 @@ class BayesianMBTIApp:
             self.type_probabilities[mbti_type] = 1/16
 
 # jadi machine learning
-# rinci kenapa cocok dibidang intu (lihar dari dimensional breakdown)
