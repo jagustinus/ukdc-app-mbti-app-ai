@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from data_fetcher import QuestionFetcher
+from data_fetcher import DataFetcher
 
 class BayesianMBTIApp:
     def __init__(self):
@@ -22,9 +23,13 @@ class BayesianMBTIApp:
         # self.type_probabilities = {mbti_type: 1/16 for mbti_type in self.mbti_types}
 
         # Questions with associated trait likelihoods
-        data = QuestionFetcher()
-        data.parse("./data/question.csv")
-        self.questions = data.question
+        qfetch = QuestionFetcher()
+        qfetch.parse("./data/question.csv")
+        self.questions = qfetch.question
+
+        jfetch = DataFetcher()
+        jfetch.read_file("./data/raw_mbti.csv")
+        self.job_data = jfetch.data
 
         self.personality_descriptions = {
             "ISTJ": "ISTJs are structured, detail-oriented, and grounded in reality. Their introverted sensing (Si) makes them excellent at recalling past data and applying proven methods, ideal for roles like software engineering or systems analysis, where consistency, precision, and clear frameworks are essential. Their introversion aligns with tasks requiring deep, uninterrupted focus, such as debugging or systems optimization, where quiet environments allow them to excel without distractions.",
