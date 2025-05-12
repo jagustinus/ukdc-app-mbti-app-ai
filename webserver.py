@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from app import BayesianMBTIApp
 import os
+from result_job import MBTIJobPredictor
 
 # can be overwritten with all of the question later using `len(mbti_app.questions)`
 question_count = 20
@@ -121,11 +122,26 @@ def results():
     sorted_types = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
     sorted_types = [(t, round(p*100, 1)) for t, p in sorted_types]
 
+    ## TESTING ##
+    buffer = ""
+    with open("./data/raw_mbti.csv", 'r', encoding='utf-8') as f:
+        csv_data = f.read()
+        predictor = MBTIJobPredictor(csv_data)
+
+        # mbti_input = "INTP 0.7 ENFP 0.6"
+        predictions = predictor.predict_jobs(probabilities)
+
+        print(f"Based on MBTI distribution: {probabilities}")
+        print("\nRecommended jobs:")
+        for i, (job, score) in enumerate(predictions, 1):
+            buffer += f"{i}. {job} (Score: {score:.2f})"
+            print(f"{i}. {job} (Score: {score:.2f})")
+
     return render_template(
             'results.html',
             personality_type=personality_type,
             confidence=round(confidence, 1),
-            description="WIP: Will integrate with AI",
+            description=buffer,
             # description=mbti_app.personality_descriptions.get(personality_type, ""),
             sorted_types=sorted_types,
             dimensions={
