@@ -1,13 +1,11 @@
 import pandas as pd
 import numpy as np
+import re
 import joblib
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.neighbors import KNeighborsClassifier
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.naive_bayes import GaussianNB
-# from sklearn.linear_model import LogisticRegression
-from collections import Counter
 from io import StringIO
+from collections import Counter
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeClassifier
 
 class MBTIJobPredictor:
     def __init__(self, csv_data):
@@ -26,7 +24,7 @@ class MBTIJobPredictor:
         self.process_data()
 
     def process_data(self):
-        """Process the data and train a KNN model"""
+        """Process the data and train a Decision Tree model"""
         # Create MBTI features (one-hot encoded)
         self.mbti_encoder = OneHotEncoder(sparse_output=False)
         self.mbti_encoder.fit(np.array(self.mbti_types).reshape(-1, 1))
@@ -40,74 +38,109 @@ class MBTIJobPredictor:
             jobs = self.df[self.df['mbti'] == mbti]['job_category'].tolist()
             self.mbti_to_jobs[mbti] = Counter(jobs)
 
-        # Prepare data for KNN model
+        # Prepare data for the Decision Tree model
         X = self.mbti_encoder.transform(self.df['mbti'].values.reshape(-1, 1))
         y = self.df['job_category'].values
 
-        # Train KNN model
-        # self.model = KNeighborsClassifier(n_neighbors=1, n_jobs=-1)
-        # self.model.fit(X, y)
+        # Train Decision Tree model
+        self.dt_model = DecisionTreeClassifier(max_depth=5, min_samples_leaf=1)
+        self.dt_model.fit(X, y)
 
-        # joblib.dump(self.model, "model.pkl")
-        self.knn_model = joblib.load("./model.pkl")
+        joblib.dump(self.dt_model, "model.pkl")
+        # self.dt_model = joblib.load("model.pkl")
+
+        # Get feature importances for later use
+        self.feature_importances = self.dt_model.feature_importances_
+
+    def parse_mbti_input(self, mbti_input):
+        """
+        Parse the input string of MBTI types with probabilities
+
+        Args:
+            mbti_input (str or dict): String like "ESFJ 0.2 ISTJ 0.3" or dict of MBTI types
+
+        Returns:
+            dict: Dictionary of MBTI types to probabilities
+        """
+        if isinstance(mbti_input, str):
+            mbti_probabilities = {}
+            pattern = r'([A-Z]{4})\s+(0\.\d+|\d+\.\d+)'
+            matches = re.findall(pattern, mbti_input)
+
+            for mbti, prob in matches:
+                mbti_probabilities[mbti] = float(prob)
+
+            return mbti_probabilities
+        else:
+            # If it's already a dictionary, just return it
+            return mbti_input
 
     def predict_jobs(self, mbti_input, top_n=5):
         """
         Predict suitable jobs based on a weighted combination of MBTI types
 
         Args:
-            mbti_input (str): String like "ESFJ 0.2 ISTJ 0.3"
+            mbti_input (str or dict): String like "ESFJ 0.2 ISTJ 0.3" or dictionary
             top_n (int): Number of top job recommendations to return
 
         Returns:
             list: List of predicted job categories with their scores
         """
-        mbti_probabilities = mbti_input
+        mbti_probabilities = self.parse_mbti_input(mbti_input)
 
-        # Method 1: Basic weighted counting approach
-        job_scores = Counter()
+        # Method 1: Basic weighted counting approach (60% weight)
+        counting_scores = Counter()
 
         for mbti, probability in mbti_probabilities.items():
             if mbti in self.mbti_to_jobs:
                 for job, count in self.mbti_to_jobs[mbti].items():
-                    job_scores[job] += probability * count
+                    counting_scores[job] += probability * count
 
-        # Method 2: KNN approach
-        # Create a weighted feature vector
-        feature_vector = np.zeros((1, len(self.mbti_types)))
+        # Method 2: Decision Tree approach (40% weight)
+        dt_scores = Counter()
 
+        # Create feature vectors for each input MBTI type
         for mbti, probability in mbti_probabilities.items():
             if mbti in self.mbti_types:
+                # Create one-hot encoded feature
                 idx = self.mbti_types.index(mbti)
-                feature_vector[0, idx] = probability
+                feature_vector = np.zeros((1, len(self.mbti_types)))
+                feature_vector[0, idx] = 1
 
-        # Normalize to sum to 1 (if not already)
-        if np.sum(feature_vector) > 0:
-            feature_vector = feature_vector / np.sum(feature_vector)
+                # Get prediction probabilities for all classes
+                proba = self.dt_model.predict_proba(feature_vector)[0]
+                classes = self.dt_model.classes_
 
-        # Get nearest neighbors with distances
-        distances, indices = self.model.kneighbors(feature_vector, n_neighbors=min(5, len(self.df)))
+                # Add weighted scores
+                for i, job in enumerate(classes):
+                    dt_scores[job] += proba[i] * probability
 
-        # Add KNN results to job scores with distance-based weighting
-        for i, idx in enumerate(indices[0]):
-            job = self.df['job_category'].iloc[idx]
-            # Convert distance to similarity score (1 / (1 + distance))
-            similarity = 1 / (1 + distances[0][i])
-            job_scores[job] += similarity
+        # Combine scores with weights
+        combined_scores = Counter()
 
-        # Return top N job recommendations
-        return job_scores.most_common(top_n)
+        # Normalize each set of scores
+        if counting_scores:
+            max_counting = max(counting_scores.values())
+            for job, score in counting_scores.items():
+                normalized_score = score / max_counting if max_counting > 0 else 0
+                combined_scores[job] += 0.6 * normalized_score
+
+        if dt_scores:
+            max_dt = max(dt_scores.values())
+            for job, score in dt_scores.items():
+                normalized_score = score / max_dt if max_dt > 0 else 0
+                combined_scores[job] += 0.4 * normalized_score
+
+        # Scale scores to 0-100 range for better readability
+        final_scores = []
+        for job, score in combined_scores.most_common(top_n):
+            scaled_score = score * 100  # Scale to 0-100
+            final_scores.append((job, scaled_score))
+
+        return final_scores
 
     def add_data(self, name, field, subcategory, mbti):
-        """
-        Add new data to the predictor and retrain the model
-
-        Args:
-            name (str): Person's name
-            field (str): Field of work
-            subcategory (str): Job subcategory
-            mbti (str): MBTI personality type
-        """
+        """Add new data and retrain the model"""
         new_row = pd.DataFrame({
             'name': [name],
             'field': [field],
@@ -117,7 +150,7 @@ class MBTIJobPredictor:
 
         self.df = pd.concat([self.df, new_row], ignore_index=True)
 
-        # Update MBTI types and job categories if new ones are added
+        # Update types if needed
         if mbti not in self.mbti_types:
             self.mbti_types.append(mbti)
             self.mbti_types.sort()
@@ -127,5 +160,5 @@ class MBTIJobPredictor:
             self.job_categories.append(job_category)
             self.job_categories.sort()
 
-        # Retrain the model with updated data
+        # Retrain the model
         self.process_data()

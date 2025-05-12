@@ -134,8 +134,11 @@ def results():
         print(f"Based on MBTI distribution: {probabilities}")
         print("\nRecommended jobs:")
         for i, (job, score) in enumerate(predictions, 1):
-            buffer += f"{i}. {job} (Score: {score:.2f})"
+            buffer += f"{job} (Score: {score:.2f}), "
             print(f"{i}. {job} (Score: {score:.2f})")
+
+        buffer.rstrip()
+        buffer = buffer[:-2]
 
     return render_template(
             'results.html',
