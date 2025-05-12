@@ -128,6 +128,7 @@ def results():
                 },
             user_name=mbti_app.name,
             user_email=mbti_app.email,
+            user_telp=mbti_app.telp,
             )
 
 @app.route('/reset')

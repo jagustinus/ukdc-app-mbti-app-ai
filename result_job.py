@@ -4,6 +4,7 @@ import re
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
+from io import StringIO
 
 class MBTIJobPredictor:
     def __init__(self, csv_data):
@@ -14,7 +15,7 @@ class MBTIJobPredictor:
             csv_data (str): CSV string containing the MBTI and job data
         """
         # Parse the CSV data into a DataFrame
-        self.df = pd.read_csv(pd.StringIO(csv_data))
+        self.df = pd.read_csv(StringIO(csv_data))
 
         # Create mappings and train the model
         self.mbti_types = sorted(self.df['mbti'].unique())
@@ -24,7 +25,7 @@ class MBTIJobPredictor:
     def process_data(self):
         """Process the data and train a KNN model"""
         # Create MBTI features (one-hot encoded)
-        self.mbti_encoder = OneHotEncoder(sparse=False)
+        self.mbti_encoder = OneHotEncoder(sparse_output=False)
         self.mbti_encoder.fit(np.array(self.mbti_types).reshape(-1, 1))
 
         # Create job labels
