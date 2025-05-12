@@ -3,6 +3,9 @@ import numpy as np
 import joblib
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.naive_bayes import GaussianNB
+# from sklearn.linear_model import LogisticRegression
 from collections import Counter
 from io import StringIO
 
@@ -42,11 +45,11 @@ class MBTIJobPredictor:
         y = self.df['job_category'].values
 
         # Train KNN model
-        self.knn_model = KNeighborsClassifier(n_neighbors=1, n_jobs=-1)
-        self.knn_model.fit(X, y)
-        joblib.dump(self.knn_model, "model.pkl")
+        # self.model = KNeighborsClassifier(n_neighbors=1, n_jobs=-1)
+        # self.model.fit(X, y)
 
-        # self.knn_model = joblib.load("./model.pkl")
+        # joblib.dump(self.model, "model.pkl")
+        self.knn_model = joblib.load("./model.pkl")
 
     def predict_jobs(self, mbti_input, top_n=5):
         """
@@ -83,7 +86,7 @@ class MBTIJobPredictor:
             feature_vector = feature_vector / np.sum(feature_vector)
 
         # Get nearest neighbors with distances
-        distances, indices = self.knn_model.kneighbors(feature_vector, n_neighbors=min(5, len(self.df)))
+        distances, indices = self.model.kneighbors(feature_vector, n_neighbors=min(5, len(self.df)))
 
         # Add KNN results to job scores with distance-based weighting
         for i, idx in enumerate(indices[0]):
