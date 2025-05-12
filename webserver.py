@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from app import BayesianMBTIApp
 import os
 
+# can be overwritten with all of the question later using `len(mbti_app.questions)`
+question_count = 20
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Needed for session
 
@@ -73,11 +76,14 @@ def test():
         session['asked_questions'] = session['asked_questions'] + 1
 
         # Check if we should end the test
-        if len(remaining_indices) == 0 or session['asked_questions'] >= 20:
+        if len(remaining_indices) == 0 or session['asked_questions'] >= question_count:
             return redirect(url_for('results'))
 
     # Get next question
     if session['remaining_indices']:
+        # The Simple way to do it: just take the next index.
+        # a more better approach is to use algorithm to pick the next question based
+        # on the current percentage.
         session['current_question_index'] = session['remaining_indices'][0]
         question, _ = mbti_app.questions[session['current_question_index']]
 
@@ -98,6 +104,7 @@ def results():
     # Get the personality type with highest probability
     probabilities = session['probabilities']
     personality_type = max(probabilities.items(), key=lambda x: x[1])[0]
+    # print(f"DEBUG: {probabilities}")
     confidence = probabilities[personality_type] * 100
 
     # Calculate dimensional breakdown

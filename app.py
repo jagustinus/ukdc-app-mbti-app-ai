@@ -32,6 +32,7 @@ class BayesianMBTIApp:
         jfetch.read_file("./data/raw_mbti.csv")
         self.job_data = jfetch.data
 
+        # TODO: Will use the POWER OF AI for this.
         self.personality_descriptions = {
             "ISTJ": "ISTJs are structured, detail-oriented, and grounded in reality. Their introverted sensing (Si) makes them excellent at recalling past data and applying proven methods, ideal for roles like software engineering or systems analysis, where consistency, precision, and clear frameworks are essential. Their introversion aligns with tasks requiring deep, uninterrupted focus, such as debugging or systems optimization, where quiet environments allow them to excel without distractions.",
             "ISFJ": "ISFJs combine empathy with a high degree of responsibility. Their Si-Fe function stack makes them deeply attentive to user needs while valuing thoroughness and tradition. As technical writers, QA testers, or support engineers, they excel by applying proven methods while ensuring others feel supported and guided. Their introversion helps them patiently and carefully address complex problems, often behind the scenes, where their steadiness shines.",
@@ -59,137 +60,6 @@ class BayesianMBTIApp:
 
     def set_telp(self, telp: str):
         self.telp = telp
-
-    def ask_question(self, question, likelihoods):
-        """Ask a question and update type probabilities based on answer"""
-        while True:
-            print("\n" + question)
-            print("1 - Strongly Disagree")
-            print("2 - Disagree")
-            print("3 - Neutral")
-            print("4 - Agree")
-            print("5 - Strongly Agree")
-
-            try:
-                answer = int(input("Your answer (1-5): "))
-                if 1 <= answer <= 5:
-                    # Update probabilities using Bayes' theorem
-                    self.update_probabilities(answer, likelihoods)
-                    return
-                else:
-                    print("Please enter a number between 1 and 5.")
-            except ValueError:
-                print("Please enter a valid number.")
-
-    def update_probabilities(self, answer, likelihoods):
-        """Update the probabilities of each MBTI type based on the answer"""
-        # Get the likelihood values for this answer
-        answer_likelihoods = likelihoods[answer]
-
-        # Calculate posterior probabilities for each type
-        new_probabilities = {}
-
-        for mbti_type in self.mbti_types:
-            # Calculate the likelihood of this answer given the type
-            type_likelihood = 1.0
-            for _, letter in enumerate(mbti_type):
-                # For each letter in MBTI type, get its dimension's likelihood
-                if letter in answer_likelihoods:
-                    type_likelihood *= answer_likelihoods[letter]
-
-            # Apply Bayes theorem: P(Type|Answer) ∝ P(Answer|Type) × P(Type)
-            new_probabilities[mbti_type] = type_likelihood * self.type_probabilities[mbti_type]
-
-        # Normalize the probabilities to sum to 1
-        total = sum(new_probabilities.values())
-        if total > 0:  # Avoid division by zero
-            for mbti_type in self.mbti_types:
-                self.type_probabilities[mbti_type] = new_probabilities[mbti_type] / total
-
-    def get_next_question_index(self, remaining_indices):
-        """Choose the most informative next question using a simple approach"""
-        if not remaining_indices:
-            return None
-
-        return remaining_indices[0]
-
-    def determine_type(self):
-        """Find the MBTI type with the highest probability"""
-        return max(self.type_probabilities.items(), key=lambda x: x[1])[0]
-
-    def run_test(self):
-        print("\n" + "="*50)
-        print("Welcome to the Bayesian MBTI Personality Test!")
-        print("="*50)
-        print("\nThis test uses Bayesian probability to determine your personality type.")
-        print("The questions are adaptive, adjusting based on your previous answers.")
-
-        input("\nPress Enter to begin the test...")
-
-        # Track which questions we've asked
-        remaining_indices = list(range(len(self.questions)))
-        asked_questions = 0
-
-        # Ask up to 10 questions (or fewer if we reach high confidence)
-        while remaining_indices and asked_questions < 20:
-            # Get the next best question to ask
-            question_index: int | None = self.get_next_question_index(remaining_indices)
-            if question_index is not None:
-                remaining_indices.remove(question_index)
-
-            # Ask the question and update probabilities
-            if question_index is not None:
-                question, likelihoods = self.questions[question_index]
-                self.ask_question(question, likelihoods)
-                asked_questions += 1
-
-            # Get current most probable type
-            current_type = self.determine_type()
-            current_probability = self.type_probabilities[current_type]
-
-            # Print current probabilities (top 3)
-            top_types = sorted(self.type_probabilities.items(), key=lambda x: x[1], reverse=True)[:3]
-            print("\nCurrent top probabilities:")
-            for type_name, prob in top_types:
-                print(f"{type_name}: {prob:.1%}")
-
-            # If we're very confident (>80%), we could stop early
-            # if current_probability > 0.8 and asked_questions >= 5:
-            #     print("\nHigh confidence reached, finishing test early...")
-            #     break
-
-        # Determine and display results
-        personality_type = self.determine_type()
-        confidence = self.type_probabilities[personality_type]
-
-        print("\n" + "="*50)
-        print(f"Your MBTI Personality Type: {personality_type} (Confidence: {confidence:.1%})")
-        print("="*50)
-
-        if personality_type in self.personality_descriptions:
-            print(f"\nDescription: {self.personality_descriptions[personality_type]}")
-
-        # Show probability distribution for all types
-        print("\nFinal probabilities for all types:")
-        sorted_types = sorted(self.type_probabilities.items(), key=lambda x: x[1], reverse=True)
-        for type_name, prob in sorted_types:
-            print(f"{type_name}: {prob:.1%}")
-
-        # Show dimensional breakdown
-        print("\nDimensional breakdown:")
-        e_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[0] == 'E')
-        i_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[0] == 'I')
-        s_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[1] == 'S')
-        n_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[1] == 'N')
-        t_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[2] == 'T')
-        f_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[2] == 'F')
-        j_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[3] == 'J')
-        p_prob = sum(self.type_probabilities[t] for t in self.mbti_types if t[3] == 'P')
-
-        print(f"E: {e_prob:.1%} - I: {i_prob:.1%}")
-        print(f"S: {s_prob:.1%} - N: {n_prob:.1%}")
-        print(f"T: {t_prob:.1%} - F: {f_prob:.1%}")
-        print(f"J: {j_prob:.1%} - P: {p_prob:.1%}")
 
     def reset(self):
         for mbti_type in self.mbti_types:
