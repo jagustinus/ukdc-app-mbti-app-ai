@@ -125,7 +125,8 @@ def results():
             'results.html',
             personality_type=personality_type,
             confidence=round(confidence, 1),
-            description=mbti_app.personality_descriptions.get(personality_type, ""),
+            description="WIP: Will integrate with AI",
+            # description=mbti_app.personality_descriptions.get(personality_type, ""),
             sorted_types=sorted_types,
             dimensions={
                 'E': round(e_prob, 1), 'I': round(i_prob, 1),

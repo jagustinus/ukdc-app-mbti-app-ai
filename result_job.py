@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
+import joblib
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
@@ -44,6 +45,7 @@ class MBTIJobPredictor:
         # Train KNN model
         self.knn_model = KNeighborsClassifier(n_neighbors=1)
         self.knn_model.fit(X, y)
+        joblib.dump(self.knn_model, "model.pkl")
 
     def parse_mbti_input(self, mbti_input):
         """
@@ -146,34 +148,14 @@ class MBTIJobPredictor:
 
 # Example usage
 if __name__ == "__main__":
-    # Sample CSV data
-    csv_data = """name,field,subcategory,mbti
-A. J. Holmes,Entertainment,Actors & Actresses,INFJ
-A.J. Cook,Entertainment,Actors & Actresses,ESFJ
-Aamina Sheikh,Entertainment,Actors & Actresses,ISTJ
-Aamir Khan,Entertainment,Actors & Actresses,INFJ
-John Doe,Technology,Software Development,INTP
-Jane Smith,Technology,Data Science,INTJ
-Mike Johnson,Healthcare,Nursing,ISFJ
-Sarah Wilson,Education,Teaching,ENFJ
-Robert Brown,Finance,Investment Banking,ENTJ
-Lisa Miller,Science,Research,INTP
-David Garcia,Business,Entrepreneurship,ENTP
-Emily Davis,Arts,Graphic Design,INFP
-Michael Lee,Law,Attorney,ESTJ
-Sophia Martinez,Marketing,Digital Marketing,ENFP
-"""
+    with open("./data/raw_mbti.csv", 'r', encoding='utf-8') as f:
+        csv_data = f.read()
+        predictor = MBTIJobPredictor(csv_data)
 
-    # Initialize the predictor
-    predictor = MBTIJobPredictor(csv_data)
+        mbti_input = "INTP 0.7 ENFP 0.6"
+        predictions = predictor.predict_jobs(mbti_input)
 
-    # Example input
-    mbti_input = "INTP 0.6 ENFP 0.4"
-
-    # Get job predictions
-    predictions = predictor.predict_jobs(mbti_input)
-
-    print(f"Based on MBTI distribution: {mbti_input}")
-    print("\nRecommended jobs:")
-    for i, (job, score) in enumerate(predictions, 1):
-        print(f"{i}. {job} (Score: {score:.2f})")
+        print(f"Based on MBTI distribution: {mbti_input}")
+        print("\nRecommended jobs:")
+        for i, (job, score) in enumerate(predictions, 1):
+            print(f"{i}. {job} (Score: {score:.2f})")
