@@ -7,6 +7,7 @@ class BayesianMBTIApp:
     def __init__(self):
         self.name: str = "guest"
         self.email: str = "guest"
+        self.telp: str = ""
 
         # All 16 possible MBTI types
         self.mbti_types = [
@@ -55,6 +56,9 @@ class BayesianMBTIApp:
 
     def set_name(self, name:str):
         self.name = name
+
+    def set_telp(self, telp: str):
+        self.telp = telp
 
     def ask_question(self, question, likelihoods):
         """Ask a question and update type probabilities based on answer"""

@@ -26,8 +26,10 @@ def test():
         try:
             name = request.args['name']
             email = request.args['email']
+            telephone = request.args['telp']
             mbti_app.set_email(email)
             mbti_app.set_name(name)
+            mbti_app.set_telp(telephone)
         except:
             pass
 
