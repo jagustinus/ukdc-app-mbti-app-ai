@@ -1,4 +1,4 @@
 - [ ] Use question from good site. (https://ays-pro.com/blog/16-personality-test-50-questions-and-answers, https://www.16personalities.com/free-personality-test)
 - [ ] Translate question to INDONESIA
-- [ ] Integrate the AI JOBS PREDICTION.
+- [x] Integrate the AI JOBS PREDICTION.
 - [x] Combine webserver.py with app.py implementation.
