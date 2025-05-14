@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from app import BayesianMBTIApp
 import os
+import math
 from result_job import MBTIJobPredictor
 
 # can be overwritten with all of the question later using `len(mbti_app.questions)`
@@ -80,12 +81,51 @@ def test():
         if len(remaining_indices) == 0 or session['asked_questions'] >= question_count:
             return redirect(url_for('results'))
 
-    # Get next question
+    # Get next question (Make it more dynamic get the next question that suited with the current stats)
     if session['remaining_indices']:
-        # The Simple way to do it: just take the next index.
-        # a more better approach is to use algorithm to pick the next question based
-        # on the current percentage.
-        session['current_question_index'] = session['remaining_indices'][0]
+        max_information_gain = -1
+        next_question_index = None
+        current_probabilities = session['probabilities']
+
+        for idx in session['remaining_indices']:
+            _, likelihoods = mbti_app.questions[idx]
+
+            # Calculate expected information gain for this question
+            information_gain = 0
+            # For each possible answer to this question (typically 5 options)
+            for answer_option in range(5):
+                if answer_option not in likelihoods:
+                    continue
+                # Calculate what the new probabilities would be if this answer was selected
+                answer_likelihoods = likelihoods[answer_option]
+                temp_probabilities = {}
+                for mbti_type in mbti_app.mbti_types:
+                    type_likelihood = 1.0
+                    for letter in mbti_type:
+                        if letter in answer_likelihoods:
+                            type_likelihood *= answer_likelihoods[letter]
+                    temp_probabilities[mbti_type] = type_likelihood * current_probabilities[mbti_type]
+                # Normalize temp probabilities
+                temp_total = sum(temp_probabilities.values())
+                if temp_total > 0:
+                    for mbti_type in mbti_app.mbti_types:
+                        temp_probabilities[mbti_type] /= temp_total
+                # Calculate entropy decrease (information gain) if this answer is chosen
+                current_entropy = -sum(p * (math.log(p) if p > 0 else 0) for p in current_probabilities.values())
+                new_entropy = -sum(p * (math.log(p) if p > 0 else 0) for p in temp_probabilities.values())
+                # Weight by the probability of getting this answer based on current probabilities
+                answer_probability = sum(current_probabilities[t] for t in mbti_app.mbti_types
+                                        if any(letter in answer_likelihoods for letter in t))
+                if answer_probability > 0:
+                    information_gain += answer_probability * (current_entropy - new_entropy)
+            # Keep track of the question with maximum information gain
+            if information_gain > max_information_gain:
+                max_information_gain = information_gain
+                next_question_index = idx
+        # If we couldn't determine a best question (unlikely), fall back to the first one
+        if next_question_index is None:
+            next_question_index = session['remaining_indices'][0]
+        session['current_question_index'] = next_question_index
         question, _ = mbti_app.questions[session['current_question_index']]
 
         return render_template(
