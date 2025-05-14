@@ -132,7 +132,7 @@ def test():
                 'test.html',
                 question=question,
                 question_num=session['asked_questions'] + 1,
-                total_questions=min(20, len(mbti_app.questions)),
+                total_questions=question_count,
                 )
     else:
         return redirect(url_for('results'))
