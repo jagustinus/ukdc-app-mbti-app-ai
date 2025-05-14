@@ -105,7 +105,6 @@ def results():
     # Get the personality type with highest probability
     probabilities = session['probabilities']
     personality_type = max(probabilities.items(), key=lambda x: x[1])[0]
-    # print(f"DEBUG: {probabilities}")
     confidence = probabilities[personality_type] * 100
 
     # Calculate dimensional breakdown
@@ -122,20 +121,19 @@ def results():
     sorted_types = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
     sorted_types = [(t, round(p*100, 1)) for t, p in sorted_types]
 
-    ## TESTING ##
     buffer = ""
     with open("./data/raw_mbti.csv", 'r', encoding='utf-8') as f:
         csv_data = f.read()
         predictor = MBTIJobPredictor(csv_data)
 
-        # mbti_input = "INTP 0.7 ENFP 0.6"
-        predictions = predictor.predict_jobs(probabilities)
+        # only take top 3
+        sorted_probs = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
+        top_3 = dict(sorted_probs[:3])
 
-        print(f"Based on MBTI distribution: {probabilities}")
-        print("\nRecommended jobs:")
-        for i, (job, score) in enumerate(predictions, 1):
+        predictions = predictor.predict_jobs(top_3)
+
+        for _, (job, score) in enumerate(predictions, 1):
             buffer += f"{job} (Score: {score:.2f}), "
-            print(f"{i}. {job} (Score: {score:.2f})")
 
         buffer.rstrip()
         buffer = buffer[:-2]
@@ -145,6 +143,7 @@ def results():
             personality_type=personality_type,
             confidence=round(confidence, 1),
             description=buffer,
+            description2=mbti_app.personality_descriptions.get(personality_type, ""),
             # description=mbti_app.personality_descriptions.get(personality_type, ""),
             sorted_types=sorted_types,
             dimensions={
