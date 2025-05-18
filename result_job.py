@@ -75,7 +75,7 @@ class MBTIJobPredictor:
             # If it's already a dictionary, just return it
             return mbti_input
 
-    def predict_jobs(self, mbti_input, top_n=5):
+    def predict_jobs(self, mbti_input, top_n=3):
         """
         Predict suitable jobs based on a weighted combination of MBTI types
 
@@ -88,7 +88,7 @@ class MBTIJobPredictor:
         """
         mbti_probabilities = self.parse_mbti_input(mbti_input)
 
-        # Method 1: Basic weighted counting approach (60% weight)
+        # Method 1: Basic weighted counting approach (40% weight)
         counting_scores = Counter()
 
         for mbti, probability in mbti_probabilities.items():
@@ -96,7 +96,7 @@ class MBTIJobPredictor:
                 for job, count in self.mbti_to_jobs[mbti].items():
                     counting_scores[job] += probability * count
 
-        # Method 2: Decision Tree approach (40% weight)
+        # Method 2: Decision Tree approach (60% weight)
         dt_scores = Counter()
 
         # Create feature vectors for each input MBTI type
@@ -123,13 +123,13 @@ class MBTIJobPredictor:
             max_counting = max(counting_scores.values())
             for job, score in counting_scores.items():
                 normalized_score = score / max_counting if max_counting > 0 else 0
-                combined_scores[job] += 0.6 * normalized_score
+                combined_scores[job] += 0.4 * normalized_score
 
         if dt_scores:
             max_dt = max(dt_scores.values())
             for job, score in dt_scores.items():
                 normalized_score = score / max_dt if max_dt > 0 else 0
-                combined_scores[job] += 0.4 * normalized_score
+                combined_scores[job] += 0.6 * normalized_score
 
         # Scale scores to 0-100 range for better readability
         final_scores = []

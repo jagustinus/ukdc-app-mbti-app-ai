@@ -172,10 +172,10 @@ def results():
         sorted_probs = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
         top_3 = dict(sorted_probs[:3])
 
-        predictions = predictor.predict_jobs(top_3)
+        predictions = predictor.predict_jobs(top_3, top_n=3)
 
         for _, (job, score) in enumerate(predictions, 1):
-            buffer += f"{job} (Score: {score:.2f}), "
+            buffer += f"{job} ({score:.2f}), "
 
         buffer.rstrip()
         buffer = buffer[:-2]
