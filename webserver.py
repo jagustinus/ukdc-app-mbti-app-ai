@@ -175,7 +175,8 @@ def results():
         predictions = predictor.predict_jobs(top_3, top_n=3)
 
         for _, (job, score) in enumerate(predictions, 1):
-            buffer += f"{job} ({score:.2f}), "
+            # buffer += f"{job} ({score:.2f}), "
+            buffer += f"{job}, "
 
         buffer.rstrip()
         buffer = buffer[:-2]
