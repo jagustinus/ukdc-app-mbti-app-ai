@@ -4,14 +4,17 @@ import os
 import math
 from result_job import MBTIJobPredictor
 
-# can be overwritten with all of the question later using `len(mbti_app.questions)`
+## CONFIGURABLE ##
+question_path = "./data/question-ayspro.csv"
+question_job_path = "./data/raw_mbti.csv"
 question_count = 25
+## CONFIGURABLE ##
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Needed for session
 
 # Initialize the MBTI app
-mbti_app = BayesianMBTIApp("./data/question-ayspro.csv")
+mbti_app = BayesianMBTIApp(question_path)
 
 @app.route('/')
 def index():
@@ -164,7 +167,7 @@ def results():
     sorted_types = [(t, round(p*100, 1)) for t, p in sorted_types]
 
     buffer = ""
-    with open("./data/raw_mbti.csv", 'r', encoding='utf-8') as f:
+    with open(question_job_path, 'r', encoding='utf-8') as f:
         csv_data = f.read()
         predictor = MBTIJobPredictor(csv_data)
 

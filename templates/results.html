@@ -9,7 +9,7 @@
         <style>
         .grad-me {
             background: #121FCF;
-            background: linear-gradient(to right, #121FCF 0%, #CF1512 100%);
+            background: linear-gradient(to right, #121FCF 0%, #CF1512 90%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -33,7 +33,7 @@
                 <p class="sublead mb-0 pb-0 text-secondary">
                   No Telp : {{ user_telp }}
                 </p>
-                <h1 class="display-1 fw-bold grad-me">{{ personality_type }}</h1>
+                <h1 class="display-1 fw-bold grad-me" id="my-type">{{ personality_type }}</h1>
                 <p class="lead">Confidence: {{ confidence }}%</p>
               </div>
 
@@ -181,10 +181,13 @@
               <script>
                 function printPage() {
                   const belowDiv = document.getElementById("tools");
-                  belowDivCp = belowDiv.innerHTML;
+                  const myType = document.getElementById("my-type");
+                  let belowDivCp = belowDiv.innerHTML;
                   belowDiv.innerHTML = "";
+                  myType.classList.remove("grad-me");
                   window.print();
                   belowDiv.innerHTML = belowDivCp;
+                  myType.classList.add("grad-me");
                 }
               </script>
 
