@@ -5,13 +5,13 @@ import math
 from result_job import MBTIJobPredictor
 
 # can be overwritten with all of the question later using `len(mbti_app.questions)`
-question_count = 20
+question_count = 25
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Needed for session
 
 # Initialize the MBTI app
-mbti_app = BayesianMBTIApp()
+mbti_app = BayesianMBTIApp("./data/question-ayspro.csv")
 
 @app.route('/')
 def index():

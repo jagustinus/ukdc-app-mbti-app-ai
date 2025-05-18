@@ -6,19 +6,24 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     />
+    <style>
+      html, body {
+        height: 100%;
+      }
+    </style>
   </head>
   <body>
-    <div class="container mt-5">
+    <div class="container d-flex align-items-center h-100 justify-content-center">
       <div class="row justify-content-center">
-        <div class="col-md-8">
-          <div class="card">
+        <div class="col-md-9 d-flex justify-content-center">
+          <div class="card" style="min-width:80%; max-width: 80%;">
             <div class="card-header bg-primary text-white">
               <h3>Pertanyaan {{ question_num }} dari {{ total_questions }}</h3>
             </div>
             <div class="card-body">
               <h4 class="mb-4">{{ question }}</h4>
               <form action="{{ url_for('test') }}" method="post">
-                <div class="mb-3">
+                <div class="mb-3 d-flex justify-content-center">
                   <div class="form-check form-check-inline">
                     <input
                       class="form-check-input"

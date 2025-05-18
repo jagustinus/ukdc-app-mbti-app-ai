@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 from data_fetcher import QuestionFetcher
-from data_fetcher import DataFetcher
 
 class BayesianMBTIApp:
-    def __init__(self):
+    def __init__(self, csv_file_path: str):
         self.name: str = "guest"
         self.email: str = "guest"
         self.telp: str = ""
@@ -25,12 +24,8 @@ class BayesianMBTIApp:
 
         # Questions with associated trait likelihoods
         qfetch = QuestionFetcher()
-        qfetch.parse("./data/question.csv")
+        qfetch.parse(csv_file_path)
         self.questions = qfetch.question
-
-        jfetch = DataFetcher()
-        jfetch.read_file("./data/raw_mbti.csv")
-        self.job_data = jfetch.data
 
         # TODO: Will use the POWER OF AI for this.
         self.personality_descriptions = {
