@@ -21,6 +21,7 @@ class MBTIJobPredictor:
         # Create mappings and train the model
         self.mbti_types = sorted(self.df['mbti'].unique())
         self.job_categories = sorted(self.df['subcategory'].unique())
+        # self.job_categories = sorted(self.df['field'].str.cat(self.df['subcategory'], sep=' - ').unique())
         self.process_data()
 
     def process_data(self):
@@ -30,7 +31,7 @@ class MBTIJobPredictor:
         self.mbti_encoder.fit(np.array(self.mbti_types).reshape(-1, 1))
 
         # Create job labels
-        self.df['job_category'] = self.df['subcategory']
+        self.df['job_category'] = self.df['field'] + ' - ' + self.df['subcategory']
 
         # Map MBTI to jobs for the basic approach
         self.mbti_to_jobs = {}
@@ -143,6 +144,7 @@ class MBTIJobPredictor:
         """Add new data and retrain the model"""
         new_row = pd.DataFrame({
             'name': [name],
+            'field': [field],
             'subcategory': [subcategory],
             'mbti': [mbti]
         })

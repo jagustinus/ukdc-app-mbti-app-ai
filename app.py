@@ -59,3 +59,5 @@ class BayesianMBTIApp:
     def reset(self):
         for mbti_type in self.mbti_types:
             self.type_probabilities[mbti_type] = 1/16
+
+    # TODO: make the random know what current session is.

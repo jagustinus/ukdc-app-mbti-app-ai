@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from app import BayesianMBTIApp
 import os
-import math
+import random
 from result_job import MBTIJobPredictor
 
 ## CONFIGURABLE ##
 question_path = "./data/question-ayspro.csv"
 question_job_path = "./data/raw_mbti-indo.csv"
-question_count = 25
+question_count = 40
 ## CONFIGURABLE ##
 
 app = Flask(__name__)
@@ -49,7 +49,7 @@ def test():
         # Get the question and likelihoods
         if question_index is None:
             return redirect(url_for('index'))
-        question, likelihoods = mbti_app.questions[question_index]
+        question, likelihoods, _ = mbti_app.questions[question_index]
 
         # Update probabilities based on the answer
         probabilities = session['probabilities']
@@ -86,52 +86,11 @@ def test():
         if len(remaining_indices) == 0 or session['asked_questions'] >= question_count:
             return redirect(url_for('results'))
 
-    # Get next question (Make it more dynamic get the next question that suited with the current stats)
+    # Get next question
     if session['remaining_indices']:
-        max_information_gain = -1
-        next_question_index = None
-        current_probabilities = session['probabilities']
-
-        for idx in session['remaining_indices']:
-            _, likelihoods = mbti_app.questions[idx]
-
-            # Calculate expected information gain for this question
-            information_gain = 0
-            # For each possible answer to this question (typically 5 options)
-            for answer_option in range(5):
-                if answer_option not in likelihoods:
-                    continue
-                # Calculate what the new probabilities would be if this answer was selected
-                answer_likelihoods = likelihoods[answer_option]
-                temp_probabilities = {}
-                for mbti_type in mbti_app.mbti_types:
-                    type_likelihood = 1.0
-                    for letter in mbti_type:
-                        if letter in answer_likelihoods:
-                            type_likelihood *= answer_likelihoods[letter]
-                    temp_probabilities[mbti_type] = type_likelihood * current_probabilities[mbti_type]
-                # Normalize temp probabilities
-                temp_total = sum(temp_probabilities.values())
-                if temp_total > 0:
-                    for mbti_type in mbti_app.mbti_types:
-                        temp_probabilities[mbti_type] /= temp_total
-                # Calculate entropy decrease (information gain) if this answer is chosen
-                current_entropy = -sum(p * (math.log(p) if p > 0 else 0) for p in current_probabilities.values())
-                new_entropy = -sum(p * (math.log(p) if p > 0 else 0) for p in temp_probabilities.values())
-                # Weight by the probability of getting this answer based on current probabilities
-                answer_probability = sum(current_probabilities[t] for t in mbti_app.mbti_types
-                                        if any(letter in answer_likelihoods for letter in t))
-                if answer_probability > 0:
-                    information_gain += answer_probability * (current_entropy - new_entropy)
-            # Keep track of the question with maximum information gain
-            if information_gain > max_information_gain:
-                max_information_gain = information_gain
-                next_question_index = idx
-        # If we couldn't determine a best question (unlikely), fall back to the first one
-        if next_question_index is None:
-            next_question_index = session['remaining_indices'][0]
-        session['current_question_index'] = next_question_index
-        question, _ = mbti_app.questions[session['current_question_index']]
+        random_index = random.randint(0, len(session['remaining_indices']))
+        session['current_question_index'] = session['remaining_indices'][random_index]
+        question, _, _ = mbti_app.questions[session['current_question_index']]
 
         return render_template(
                 'test.html',
