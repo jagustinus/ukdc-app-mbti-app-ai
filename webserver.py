@@ -16,6 +16,13 @@ app.secret_key = os.urandom(24)  # Needed for session
 # Initialize the MBTI app
 mbti_app = BayesianMBTIApp(question_path)
 
+useless_data = {
+    "EI": 0,
+    "SN": 0,
+    "TF": 0,
+    "JP": 0,
+}
+
 @app.route('/')
 def index():
     session.clear()
@@ -88,13 +95,36 @@ def test():
 
     # Get next question
     if session['remaining_indices']:
-        random_index = random.randint(0, len(session['remaining_indices']))
-        session['current_question_index'] = session['remaining_indices'][random_index]
-        question, _, _ = mbti_app.questions[session['current_question_index']]
+        # Set a limit for attempts to avoid infinite loop
+        max_attempts = 10
+        attempts = 0
+        found_question = False
+        global_question = None
+
+        while attempts < max_attempts and not found_question:
+            random_index = random.randint(0, len(session['remaining_indices']) - 1)
+            session['current_question_index'] = session['remaining_indices'][random_index]
+            question, _, y = mbti_app.questions[session['current_question_index']]
+
+            # Check if we've asked enough questions of this type
+            if useless_data[y] < question_count // 4:
+                useless_data[y] += 1
+                global_question = question
+                found_question = True
+            else:
+                attempts += 1
+
+        # If we couldn't find a balanced question after max attempts, just use the current one
+        if not found_question:
+            session['current_question_index'] = session['remaining_indices'][0]
+            question, _, y = mbti_app.questions[session['current_question_index']]
+            global_question = question
+            useless_data[y] += 1
+        print(useless_data)
 
         return render_template(
                 'test.html',
-                question=question,
+                question=global_question,
                 question_num=session['asked_questions'] + 1,
                 total_questions=question_count,
                 )
