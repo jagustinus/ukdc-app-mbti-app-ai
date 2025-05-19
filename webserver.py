@@ -6,7 +6,7 @@ from result_job import MBTIJobPredictor
 
 ## CONFIGURABLE ##
 question_path = "./data/question-ayspro.csv"
-question_job_path = "./data/raw_mbti.csv"
+question_job_path = "./data/raw_mbti-indo.csv"
 question_count = 25
 ## CONFIGURABLE ##
 
@@ -191,7 +191,7 @@ def results():
             description=buffer,
             description2=mbti_app.personality_descriptions.get(personality_type, ""),
             # description=mbti_app.personality_descriptions.get(personality_type, ""),
-            sorted_types=sorted_types,
+            sorted_types=sorted_types[:5],
             dimensions={
                 'E': round(e_prob, 1), 'I': round(i_prob, 1),
                 'S': round(s_prob, 1), 'N': round(n_prob, 1),

@@ -155,7 +155,8 @@ class MBTIJobPredictor:
             self.mbti_types.append(mbti)
             self.mbti_types.sort()
 
-        job_category = f"{field} - {subcategory}"
+        # job_category = f"{field} - {subcategory}"
+        job_category = f"{subcategory}"
         if job_category not in self.job_categories:
             self.job_categories.append(job_category)
             self.job_categories.sort()
