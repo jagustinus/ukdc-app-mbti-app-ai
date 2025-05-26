@@ -1,98 +1,119 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Tes MBTI - Pertanyaan {{ question_num }}</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    />
-    <style>
-      html, body {
-        height: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container d-flex align-items-center h-100 justify-content-center">
-      <div class="row justify-content-center w-100" style="height: 50%;">
-        <div class="col-md-9 d-flex justify-content-center w-100">
-          <div class="card" style="min-width:80% !important; max-width: 80% !important; width: 80% !important; height: 100%; !important">
-            <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-              <img src="../static/test.png" width="64"/>
-              <h3 class="m-1">Pertanyaan {{ question_num }} dari {{ total_questions }}</h3>
-            </div>
-            <div class="card-body align-items-center d-flex flex-column">
-              <h4 class="mb-5">{{ question }}</h4>
-              <form action="{{ url_for('test') }}" method="post" class="mt-auto">
-                  <div class="mb-3 d-flex flex-wrap justify-content-center">
-                  <div class="m-2 form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="answer"
-                      id="answer1"
-                      value="1"
-                      required
-                    />
-                    <label class="form-check-label" for="answer1"
-                      >Sangat Tidak Setuju</label
-                    >
-                  </div>
-                  <div class="m-2 form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="answer"
-                      id="answer2"
-                      value="2"
-                    />
-                    <label class="form-check-label" for="answer2"
-                      >Tidak Setuju</label
-                    >
-                  </div>
-                  <div class="m-2 form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="answer"
-                      id="answer3"
-                      value="3"
-                    />
-                    <label class="form-check-label" for="answer3">Biasa saja</label>
-                  </div>
-                  <div class="m-2 form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="answer"
-                      id="answer4"
-                      value="4"
-                    />
-                    <label class="form-check-label" for="answer4">Setuju</label>
-                  </div>
-                  <div class="m-2 form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      name="answer"
-                      id="answer5"
-                      value="5"
-                    />
-                    <label class="form-check-label" for="answer5"
-                      >Sangat Setuju</label
-                    >
-                  </div>
+    <head>
+        <title>Tes MBTI - Pertanyaan {{ question_num }}</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        />
+        <style>
+        html, body {
+            height: 100%;
+        }
+        .option-btn {
+            display: inline-block;
+            padding: 10px 15px;
+            /* margin: 5px; */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .option-btn:hover {
+            background-color: #e9e9e9;
+        }
+        .option-btn.selected {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .hidden-radio {
+            display: none;
+        }
+        </style>
+        <script>
+        // Function to automatically submit form when an option is selected
+        function autoSubmit(value) {
+            document.getElementById('answer' + value).checked = true;
+            document.getElementById('testForm').submit();
+        }
+
+        // Function to highlight the selected option (for when going back)
+        function highlightOption(value) {
+            if (value) {
+                document.getElementById('option-btn-' + value).classList.add('selected');
+            }
+        }
+
+        // Execute when page loads
+        window.onload = function() {
+            // Check if there's a previous answer to highlight
+            const previousAnswer = "{{ previous_answer|default('') }}";
+            if (previousAnswer) {
+                highlightOption(previousAnswer);
+            }
+        };
+        </script>
+    </head>
+    <body>
+        <div class="container d-flex align-items-center h-100 justify-content-center">
+            <div class="row justify-content-center w-100" style="height: 50%;">
+                <div class="col-md-9 d-flex justify-content-center w-100">
+                    <div class="card" style="min-width:80% !important; max-width: 80% !important; width: 80% !important; height: 100%; !important">
+                        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+                            <img src="../static/test.png" width="64"/>
+                            <h3 class="m-1">Pertanyaan {{ question_num }} dari {{ total_questions }}</h3>
+                        </div>
+                        <div class="card-body align-items-center d-flex flex-column">
+                            <h4 class="mb-5">{{ question }}</h4>
+                            <form id="testForm" action="{{ url_for('test') }}" method="post" class="mt-auto">
+                                <div class="mb-3 d-flex flex-wrap justify-content-center">
+                                    <!-- Use buttons instead of radio buttons for better UX -->
+                                    <div class="m-1">
+                                        <label id="option-btn-1" class="option-btn" onclick="autoSubmit(1)">
+                                            <input class="hidden-radio" type="radio" name="answer" id="answer1" value="1" required />
+                                            Sangat Tidak Setuju
+                                        </label>
+                                    </div>
+                                    <div class="m-1">
+                                        <label id="option-btn-2" class="option-btn" onclick="autoSubmit(2)">
+                                            <input class="hidden-radio" type="radio" name="answer" id="answer2" value="2" />
+                                            Tidak Setuju
+                                        </label>
+                                    </div>
+                                    <div class="m-1">
+                                        <label id="option-btn-3" class="option-btn" onclick="autoSubmit(3)">
+                                            <input class="hidden-radio" type="radio" name="answer" id="answer3" value="3" />
+                                            Biasa saja
+                                        </label>
+                                    </div>
+                                    <div class="m-1">
+                                        <label id="option-btn-4" class="option-btn" onclick="autoSubmit(4)">
+                                            <input class="hidden-radio" type="radio" name="answer" id="answer4" value="4" />
+                                            Setuju
+                                        </label>
+                                    </div>
+                                    <div class="m-1">
+                                        <label id="option-btn-5" class="option-btn" onclick="autoSubmit(5)">
+                                            <input class="hidden-radio" type="radio" name="answer" id="answer5" value="5" />
+                                            Sangat Setuju
+                                        </label>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- Go Back button (only visible if there's history) -->
+                            {% if show_back_button %}
+                            <div class="text-center mt-4">
+                                <a href="{{ url_for('test', go_back=1) }}" class="btn btn-secondary">
+                                    Kembali ke Pertanyaan Sebelumnya
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="text-center mt-4">
-                  <button type="submit" class="btn btn-primary">
-                    Pertanyaan Berikutnya
-                  </button>
-                </div>
-              </form>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </body>
+    </body>
 </html>

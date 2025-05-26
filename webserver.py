@@ -36,6 +36,14 @@ def test():
         session['asked_questions'] = 0
         session['probabilities'] = {mbti_type: 1/16 for mbti_type in mbti_app.mbti_types}
         session['current_question_index'] = None
+        session['question_history'] = []  # Track question history
+        session['answer_history'] = []    # Track answer history
+        session['question_type_counts'] = {  # Track how many questions of each type we've asked
+            "EI": 0,
+            "SN": 0,
+            "TF": 0,
+            "JP": 0,
+        }
 
     if request.method == 'GET':
         try:
@@ -47,6 +55,65 @@ def test():
             mbti_app.set_telp(telephone)
         except:
             pass
+        
+        # Handle going back to previous question
+        if 'go_back' in request.args and session['question_history']:
+            # Pop the most recent question from history
+            previous_question_index = session['question_history'].pop()
+            previous_answer = session['answer_history'].pop() if session['answer_history'] else None
+            
+            # Get the question details to undo its effect
+            if previous_answer is not None and previous_question_index is not None:
+                _, likelihoods, question_type = mbti_app.questions[previous_question_index]
+                
+                # Undo the effect of the previous answer on the probabilities
+                probabilities = session['probabilities']
+                new_probabilities = {}
+                
+                # Calculate the inverse of the previous update
+                for mbti_type in mbti_app.mbti_types:
+                    type_likelihood = 1.0
+                    answer_likelihoods = likelihoods[previous_answer]
+                    
+                    for letter in mbti_type:
+                        if letter in answer_likelihoods:
+                            # Undo the effect by dividing instead of multiplying
+                            if answer_likelihoods[letter] > 0:
+                                type_likelihood /= answer_likelihoods[letter]
+                    
+                    new_probabilities[mbti_type] = type_likelihood * probabilities[mbti_type]
+                
+                # Normalize probabilities
+                total = sum(new_probabilities.values())
+                if total > 0:
+                    for mbti_type in mbti_app.mbti_types:
+                        new_probabilities[mbti_type] = new_probabilities[mbti_type] / total
+                        
+                session['probabilities'] = new_probabilities
+                
+                # Update the question type counter
+                if question_type in session['question_type_counts']:
+                    session['question_type_counts'][question_type] -= 1
+            
+            # Add current question back to remaining if needed
+            if session['current_question_index'] is not None and session['current_question_index'] not in session['remaining_indices']:
+                session['remaining_indices'].append(session['current_question_index'])
+            
+            # Set current question to previous one
+            session['current_question_index'] = previous_question_index
+            session['asked_questions'] -= 1
+            
+            # Get the question details
+            question, _, _ = mbti_app.questions[previous_question_index]
+            
+            return render_template(
+                'test.html',
+                question=question,
+                question_num=session['asked_questions'] + 1,
+                total_questions=question_count,
+                previous_answer=previous_answer,
+                show_back_button=(len(session['question_history']) > 0)
+            )
 
     # Process answer if POST
     if request.method == 'POST' and 'answer' in request.form:
@@ -56,8 +123,28 @@ def test():
         # Get the question and likelihoods
         if question_index is None:
             return redirect(url_for('index'))
-        question, likelihoods, _ = mbti_app.questions[question_index]
+        question, likelihoods, question_type = mbti_app.questions[question_index]
 
+        # Check if this is a re-answer (changing previous answer)
+        is_reanswer = False
+        for i, q_idx in enumerate(session['question_history']):
+            if q_idx == question_index:
+                # Found the same question in history, this is a re-answer
+                is_reanswer = True
+                old_answer = session['answer_history'][i]
+                
+                # Remove the old answer from history
+                session['question_history'].pop(i)
+                session['answer_history'].pop(i)
+                
+                # Undo the effect of the old answer if needed
+                # (We don't need to do this since we're already recalculating from scratch below)
+                break
+        
+        # Store current question and answer in history
+        session['question_history'].append(question_index)
+        session['answer_history'].append(answer)
+        
         # Update probabilities based on the answer
         probabilities = session['probabilities']
         new_probabilities = {}
@@ -81,16 +168,21 @@ def test():
 
         session['probabilities'] = new_probabilities
 
+        # Update the question type counter
+        if not is_reanswer and question_type in session['question_type_counts']:
+            session['question_type_counts'][question_type] += 1
+        
         # Update remaining questions and count
-        remaining_indices = session['remaining_indices']
-        # Add safety check before removing
-        if question_index in remaining_indices:
-            remaining_indices.remove(question_index)
-        session['remaining_indices'] = remaining_indices
-        session['asked_questions'] = session['asked_questions'] + 1
+        if not is_reanswer:
+            remaining_indices = session['remaining_indices']
+            # Add safety check before removing
+            if question_index in remaining_indices:
+                remaining_indices.remove(question_index)
+            session['remaining_indices'] = remaining_indices
+            session['asked_questions'] = session['asked_questions'] + 1
 
         # Check if we should end the test
-        if len(remaining_indices) == 0 or session['asked_questions'] >= question_count:
+        if len(session['remaining_indices']) == 0 or session['asked_questions'] >= question_count:
             return redirect(url_for('results'))
 
     # Get next question
@@ -103,30 +195,34 @@ def test():
 
         while attempts < max_attempts and not found_question:
             random_index = random.randint(0, len(session['remaining_indices']) - 1)
-            session['current_question_index'] = session['remaining_indices'][random_index]
-            question, _, y = mbti_app.questions[session['current_question_index']]
+            question_index = session['remaining_indices'][random_index]
+            question, _, question_type = mbti_app.questions[question_index]
 
             # Check if we've asked enough questions of this type
-            if useless_data[y] < question_count // 4:
-                useless_data[y] += 1
+            if session['question_type_counts'].get(question_type, 0) < question_count // 4:
+                session['question_type_counts'][question_type] = session['question_type_counts'].get(question_type, 0) + 1
                 global_question = question
+                session['current_question_index'] = question_index
                 found_question = True
             else:
                 attempts += 1
 
         # If we couldn't find a balanced question after max attempts, just use the current one
         if not found_question:
-            session['current_question_index'] = session['remaining_indices'][0]
-            question, _, y = mbti_app.questions[session['current_question_index']]
+            question_index = session['remaining_indices'][0]
+            session['current_question_index'] = question_index
+            question, _, question_type = mbti_app.questions[question_index]
             global_question = question
-            useless_data[y] += 1
-        print(useless_data)
+            session['question_type_counts'][question_type] = session['question_type_counts'].get(question_type, 0) + 1
+        
+        print(session['question_type_counts'])
 
         return render_template(
                 'test.html',
                 question=global_question,
                 question_num=session['asked_questions'] + 1,
                 total_questions=question_count,
+                show_back_button=(len(session['question_history']) > 0)
                 )
     else:
         return redirect(url_for('results'))
