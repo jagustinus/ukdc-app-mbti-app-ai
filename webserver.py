@@ -7,7 +7,7 @@ from result_job import MBTIJobPredictor
 ## CONFIGURABLE ##
 question_path = "./data/question-ayspro.csv"
 question_job_path = "./data/raw_mbti-indo.csv"
-question_count = 20
+question_count = 40
 ## CONFIGURABLE ##
 
 app = Flask(__name__)
