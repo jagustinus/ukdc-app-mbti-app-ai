@@ -7,7 +7,7 @@ from result_job import MBTIJobPredictor
 ## CONFIGURABLE ##
 question_path = "./data/question-ayspro.csv"
 question_job_path = "./data/raw_mbti-indo.csv"
-question_count = 40
+question_count = 20
 ## CONFIGURABLE ##
 
 app = Flask(__name__)
@@ -260,7 +260,7 @@ def results():
         sorted_probs = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
         top_3 = dict(sorted_probs[:3])
 
-        predictions = predictor.predict_jobs(top_3, top_n=3)
+        predictions = predictor.predict_jobs(top_3, top_n=3, diversity_factor=0.9)
 
         for _, (job, score) in enumerate(predictions, 1):
             # buffer += f"{job} ({score:.2f}), "
