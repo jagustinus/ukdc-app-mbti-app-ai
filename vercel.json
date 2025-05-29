@@ -1,0 +1,9 @@
+{
+  "builds": [
+    {
+      "src": "webserver.py",
+      "use": "@vercel/python",
+      "config": { "pythonVersion": "3.11" }
+    }
+  ]
+}
