@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "webserver.py",
+      "src": "__main__.py",
       "use": "@vercel/python",
       "config": { "pythonVersion": "3.11" }
     }
@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "webserver.py"
+      "dest": "__main__.py"
     }
   ]
 }
