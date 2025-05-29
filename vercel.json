@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dst": "webserver.py"
+      "dest": "webserver.py"
     }
   ]
 }
