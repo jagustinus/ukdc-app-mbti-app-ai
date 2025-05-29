@@ -39,73 +39,69 @@ def test():
         session['question_history'] = []  # Track question history
         session['answer_history'] = []    # Track answer history
         session['question_type_counts'] = {  # Track how many questions of each type we've asked
-            "EI": 0,
-            "SN": 0,
-            "TF": 0,
-            "JP": 0,
-        }
+                                           "EI": 0,
+                                           "SN": 0,
+                                           "TF": 0,
+                                           "JP": 0,
+                                           }
 
     if request.method == 'GET':
         try:
-            name = request.args['name']
-            email = request.args['email']
-            telephone = request.args['telp']
-            mbti_app.set_email(email)
-            mbti_app.set_name(name)
-            mbti_app.set_telp(telephone)
+            session["name"] = request.args["name"]
+            session["email"] = request.args["email"]
+            session["telp"] = request.args["telp"]
         except:
             pass
-        
         # Handle going back to previous question
         if 'go_back' in request.args and session['question_history']:
             # Pop the most recent question from history
             previous_question_index = session['question_history'].pop()
             previous_answer = session['answer_history'].pop() if session['answer_history'] else None
-            
+
             # Get the question details to undo its effect
             if previous_answer is not None and previous_question_index is not None:
                 _, likelihoods, question_type = mbti_app.questions[previous_question_index]
-                
+
                 # Undo the effect of the previous answer on the probabilities
                 probabilities = session['probabilities']
                 new_probabilities = {}
-                
+
                 # Calculate the inverse of the previous update
                 for mbti_type in mbti_app.mbti_types:
                     type_likelihood = 1.0
                     answer_likelihoods = likelihoods[previous_answer]
-                    
+
                     for letter in mbti_type:
                         if letter in answer_likelihoods:
                             # Undo the effect by dividing instead of multiplying
                             if answer_likelihoods[letter] > 0:
                                 type_likelihood /= answer_likelihoods[letter]
-                    
+
                     new_probabilities[mbti_type] = type_likelihood * probabilities[mbti_type]
-                
+
                 # Normalize probabilities
                 total = sum(new_probabilities.values())
                 if total > 0:
                     for mbti_type in mbti_app.mbti_types:
                         new_probabilities[mbti_type] = new_probabilities[mbti_type] / total
-                        
+
                 session['probabilities'] = new_probabilities
-                
+
                 # Update the question type counter
                 if question_type in session['question_type_counts']:
                     session['question_type_counts'][question_type] -= 1
-            
+
             # Add current question back to remaining if needed
             if session['current_question_index'] is not None and session['current_question_index'] not in session['remaining_indices']:
                 session['remaining_indices'].append(session['current_question_index'])
-            
+
             # Set current question to previous one
             session['current_question_index'] = previous_question_index
             session['asked_questions'] -= 1
-            
+
             # Get the question details
             question, _, _ = mbti_app.questions[previous_question_index]
-            
+
             return render_template(
                 'test.html',
                 question=question,
@@ -132,19 +128,19 @@ def test():
                 # Found the same question in history, this is a re-answer
                 is_reanswer = True
                 old_answer = session['answer_history'][i]
-                
+
                 # Remove the old answer from history
                 session['question_history'].pop(i)
                 session['answer_history'].pop(i)
-                
+
                 # Undo the effect of the old answer if needed
                 # (We don't need to do this since we're already recalculating from scratch below)
                 break
-        
+
         # Store current question and answer in history
         session['question_history'].append(question_index)
         session['answer_history'].append(answer)
-        
+
         # Update probabilities based on the answer
         probabilities = session['probabilities']
         new_probabilities = {}
@@ -171,7 +167,7 @@ def test():
         # Update the question type counter
         if not is_reanswer and question_type in session['question_type_counts']:
             session['question_type_counts'][question_type] += 1
-        
+
         # Update remaining questions and count
         if not is_reanswer:
             remaining_indices = session['remaining_indices']
@@ -214,16 +210,16 @@ def test():
             question, _, question_type = mbti_app.questions[question_index]
             global_question = question
             session['question_type_counts'][question_type] = session['question_type_counts'].get(question_type, 0) + 1
-        
+
         print(session['question_type_counts'])
 
         return render_template(
-                'test.html',
-                question=global_question,
-                question_num=session['asked_questions'] + 1,
-                total_questions=question_count,
-                show_back_button=(len(session['question_history']) > 0)
-                )
+            'test.html',
+            question=global_question,
+            question_num=session['asked_questions'] + 1,
+            total_questions=question_count,
+            show_back_button=(len(session['question_history']) > 0)
+        )
     else:
         return redirect(url_for('results'))
 
@@ -262,7 +258,7 @@ def results():
 
         predictions = predictor.predict_jobs(top_3, top_n=5)
 
-        for _, (job, score) in enumerate(predictions, 1):
+        for _, (job, _) in enumerate(predictions, 1):
             # buffer += f"{job} ({score:.2f}), "
             slice_from = job.find('-')
             buffer += f"{job[slice_from+1:]}, "
@@ -271,23 +267,23 @@ def results():
         buffer = buffer[:-2]
 
     return render_template(
-            'results.html',
-            personality_type=personality_type,
-            confidence=round(confidence, 1),
-            description=buffer,
-            description2=mbti_app.personality_descriptions.get(personality_type, ""),
-            # description=mbti_app.personality_descriptions.get(personality_type, ""),
-            sorted_types=sorted_types[:5],
-            dimensions={
-                'E': round(e_prob, 1), 'I': round(i_prob, 1),
-                'S': round(s_prob, 1), 'N': round(n_prob, 1),
-                'T': round(t_prob, 1), 'F': round(f_prob, 1),
-                'J': round(j_prob, 1), 'P': round(p_prob, 1)
-                },
-            user_name=mbti_app.name,
-            user_email=mbti_app.email,
-            user_telp=mbti_app.telp,
-            )
+        'results.html',
+        personality_type=personality_type,
+        confidence=round(confidence, 1),
+        description=buffer,
+        description2=mbti_app.personality_descriptions.get(personality_type, ""),
+        # description=mbti_app.personality_descriptions.get(personality_type, ""),
+        sorted_types=sorted_types[:5],
+        dimensions={
+            'E': round(e_prob, 1), 'I': round(i_prob, 1),
+            'S': round(s_prob, 1), 'N': round(n_prob, 1),
+            'T': round(t_prob, 1), 'F': round(f_prob, 1),
+            'J': round(j_prob, 1), 'P': round(p_prob, 1)
+        },
+        user_name=session["name"],
+        user_email=session["email"],
+        user_telp=session["telp"],
+    )
 
 @app.route('/reset')
 def reset():
