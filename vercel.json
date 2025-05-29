@@ -5,5 +5,11 @@
       "use": "@vercel/python",
       "config": { "pythonVersion": "3.11" }
     }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dst": "webserver.py"
+    }
   ]
 }
