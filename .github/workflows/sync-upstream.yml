@@ -1,0 +1,30 @@
+name: Sync Fork with Upstream
+
+on:
+  workflow_dispatch:
+  
+  schedule:
+    - cron: '*/15 * * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
+      # Step 3: Sync the fork with the upstream repository
+      - name: Sync Fork
+        run: |
+          git remote add upstream https://github.com/commrade-goad/mbti-app-ai.git
+          git fetch upstream
+          git checkout main
+          git merge upstream/main
+          git push origin main
